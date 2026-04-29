@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video resizer · GroundedAI</title>
+<style>
+  :root {
+    --copper: #DA7E3A;
+    --ember: #C86E30;
+    --steel: #3791CF;
+    --ink: #1a1a1a;
+    --bg-page: #F5F4EF;
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F1EFE8;
+    --bg-tertiary: #E8E5DB;
+    --text-primary: #1a1a1a;
+    --text-secondary: #5F5E5A;
+    --text-tertiary: #888780;
+    --border-tertiary: rgba(26, 26, 26, 0.12);
+    --border-secondary: rgba(26, 26, 26, 0.25);
+    --success-bg: #EAF3DE;
+    --success-text: #3B6D11;
+    --warning-bg: #FAEEDA;
+    --warning-text: #854F0B;
+    --danger-bg: #FCEBEB;
+    --danger-text: #A32D2D;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", "Geist Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .brand-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .brand-mark .dot {
+    width: 10px;
+    height: 10px;
+    background: var(--copper);
+    border-radius: 2px;
+  }
+
+  .brand-mark .name {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+    line-height: 1.15;
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-tertiary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: var(--ink);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 3px solid var(--copper);
+  }
+
+  .card-header .icon-box {
+    width: 28px;
+    height: 28px;
+    background: var(--copper);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-header .title {
+    margin: 0;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .card-header .sub {
+    margin: 0;
+    color: #888;
+    font-size: 12px;
+  }
+
+  .card-header .tag {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .dropzone {
+    border: 2px dashed var(--border-secondary);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg-secondary);
+  }
+
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--copper);
+    background: var(--bg-primary);
+  }
+
+  .dropzone .upload-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--copper);
+    border-radius: 8px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dropzone .primary-text {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .dropzone .meta-text {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .file-info {
+    display: none;
+    margin-top: 1rem;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--steel);
+  }
+
+  .file-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .file-name {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-meta {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+
+  .controls { display: none; margin-top: 1.5rem; }
+
+  .control-block { margin-bottom: 1.25rem; }
+
+  .control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  .control-label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .control-value {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
+
+  .control-value.copper { color: var(--copper); }
+  .control-value.steel { color: var(--steel); }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--copper);
+    border-radius: 50%;
+    margin-top: -7px;
+    border: 2px solid var(--bg-primary);
+    box-shadow: 0 0 0 1px var(--border-secondary);
+  }
+
+  input[type="range"]::-moz-range-track {
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--copper);
+    border-radius: 50%;
+    border: 2px solid var(--bg-primary);
+    box-shadow: 0 0 0 1px var(--border-secondary);
+  }
+
+  .scale-marks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+  }
+
+  .fmt-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .fmt-btn {
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    background: transparent;
+    border: 0.5px solid var(--border-secondary);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+
+  .fmt-btn:hover { background: var(--bg-secondary); }
+
+  .fmt-btn.fmt-active {
+    background: var(--ink);
+    color: #ffffff;
+    border-color: var(--ink);
+  }
+
+  .estimate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+
+  .estimate-cell {
+    background: var(--bg-secondary);
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .estimate-label {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .estimate-value {
+    margin: 2px 0 0;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
+
+  .process-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--copper);
+    color: var(--ink);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .process-btn:hover { background: var(--ember); }
+
+  .process-btn:disabled {
+    background: var(--bg-secondary);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+  }
+
+  .progress-wrap { display: none; margin-top: 1rem; }
+
+  .progress-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+
+  .progress-label { color: var(--text-secondary); }
+
+  .progress-pct {
+    color: var(--copper);
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+
+  .progress-track {
+    height: 6px;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--copper);
+    transition: width 0.2s;
+  }
+
+  .result-wrap {
+    display: none;
+    margin-top: 1rem;
+    padding: 14px;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--copper);
+    border-radius: var(--radius-md);
+  }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .result-label {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .result-size {
+    margin: 2px 0 0;
+    font-size: 18px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
+
+  .result-preview {
+    width: 100%;
+    max-height: 280px;
+    border-radius: var(--radius-md);
+    background: #000;
+    margin-bottom: 10px;
+  }
+
+  .download-link {
+    display: block;
+    text-align: center;
+    padding: 11px;
+    background: var(--ink);
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    transition: opacity 0.15s;
+  }
+
+  .download-link:hover { opacity: 0.85; }
+
+  .footer-row {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--border-tertiary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-text {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+  }
+
+  .swatch-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .footnote {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-tertiary);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .footnote strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page: #1a1a1a;
+      --bg-primary: #242424;
+      --bg-secondary: #2c2c2a;
+      --bg-tertiary: #3a3a38;
+      --text-primary: #f5f4ef;
+      --text-secondary: #b4b2a9;
+      --text-tertiary: #888780;
+      --border-tertiary: rgba(245, 244, 239, 0.12);
+      --border-secondary: rgba(245, 244, 239, 0.25);
+      --success-bg: #173404;
+      --success-text: #C0DD97;
+      --warning-bg: #412402;
+      --warning-text: #FAC775;
+      --danger-bg: #501313;
+      --danger-text: #F7C1C1;
+    }
+    .fmt-btn.fmt-active { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+    .download-link { background: var(--copper); color: var(--ink); }
+    input[type="range"]::-webkit-slider-thumb { border-color: var(--bg-primary); }
+    input[type="range"]::-moz-range-thumb { border-color: var(--bg-primary); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="brand-mark">
+      <span class="dot"></span>
+      <span class="name">GroundedAI · Internal tool</span>
+    </div>
+    <h1>Video resizer</h1>
+    <p class="subtitle">Compress field videos and screen recordings to fit Claude's upload limit. Runs entirely in your browser.</p>
+  </div>
+
+  <div class="card">
+
+    <div class="card-header">
+      <div class="icon-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+      </div>
+      <div>
+        <p class="title">Video resizer</p>
+        <p class="sub">Compress for Claude upload</p>
+      </div>
+      <div class="tag">Bold Copper v3</div>
+    </div>
+
+    <div class="card-body">
+
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="fileInput" accept="video/*" style="display: none;" />
+        <div class="upload-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </div>
+        <p class="primary-text">Drop video here or click to browse</p>
+        <p class="meta-text">MP4, MOV, WebM, AVI</p>
+      </div>
+
+      <div id="fileInfo" class="file-info">
+        <div class="file-info-row">
+          <div style="min-width: 0; flex: 1;">
+            <p id="fileName" class="file-name"></p>
+            <p id="fileMeta" class="file-meta"></p>
+          </div>
+          <span id="fileBadge" class="badge"></span>
+        </div>
+      </div>
+
+      <div id="controls" class="controls">
+
+        <div class="control-block">
+          <div class="control-row">
+            <label class="control-label">Target size</label>
+            <span id="targetOut" class="control-value copper">25 MB</span>
+          </div>
+          <input type="range" id="targetSize" min="5" max="100" value="25" step="5" />
+          <div class="scale-marks">
+            <span>5 MB</span>
+            <span>Claude limit: 30 MB</span>
+            <span>100 MB</span>
+          </div>
+        </div>
+
+        <div class="control-block">
+          <div class="control-row">
+            <label class="control-label">Resolution scale</label>
+            <span id="scaleOut" class="control-value steel">50%</span>
+          </div>
+          <input type="range" id="scaleSlider" min="25" max="100" value="50" step="5" />
+        </div>
+
+        <div class="control-block">
+          <label class="control-label" style="display: block; margin-bottom: 8px;">Output format</label>
+          <div class="fmt-grid">
+            <button class="fmt-btn fmt-active" data-fmt="mp4">MP4</button>
+            <button class="fmt-btn" data-fmt="webm">WebM</button>
+            <button class="fmt-btn" data-fmt="mov">MOV</button>
+          </div>
+        </div>
+
+        <div class="estimate-grid">
+          <div class="estimate-cell">
+            <p class="estimate-label">Estimated output</p>
+            <p id="estSize" class="estimate-value">—</p>
+          </div>
+          <div class="estimate-cell">
+            <p class="estimate-label">Reduction</p>
+            <p id="reduction" class="estimate-value">—</p>
+          </div>
+        </div>
+
+        <button id="processBtn" class="process-btn">Compress video</button>
+
+        <div id="progressWrap" class="progress-wrap">
+          <div class="progress-row">
+            <span id="progressLabel" class="progress-label">Processing…</span>
+            <span id="progressPct" class="progress-pct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </div>
+
+        <div id="resultWrap" class="result-wrap">
+          <div class="result-header">
+            <div style="min-width: 0; flex: 1;">
+              <p class="result-label">Compressed</p>
+              <p id="resultSize" class="result-size"></p>
+            </div>
+            <span id="resultBadge" class="badge"></span>
+          </div>
+          <video id="resultPreview" controls class="result-preview"></video>
+          <a id="downloadLink" href="#" download class="download-link">Download compressed video</a>
+        </div>
+
+      </div>
+
+      <div class="footer-row">
+        <p class="footer-text">Local processing · nothing uploaded</p>
+        <div class="swatch-row">
+          <span class="swatch" style="background: #DA7E3A;"></span>
+          <span class="swatch" style="background: #3791CF;"></span>
+          <span class="swatch" style="background: #1a1a1a;"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>How to use:</strong> Drop a video, set target size below 30 MB (Claude's per-file limit), pick a resolution scale, and click compress. The browser does the work locally — your video never leaves your machine. For very large source files (500 MB+), you may need to run a second pass or use HandBrake for better compression ratios. WebM gives the smallest files; stick with MP4 if you're unsure where it's going next.
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const CLAUDE_LIMIT_MB = 30;
+  let videoFile = null;
+  let videoUrl = null;
+  let videoMeta = { width: 0, height: 0, duration: 0 };
+  let format = 'mp4';
+
+  const $ = id => document.getElementById(id);
+  const fmtBytes = b => b < 1024*1024 ? (b/1024).toFixed(1)+' KB' : (b/(1024*1024)).toFixed(1)+' MB';
+
+  function setBadge(el, text, status) {
+    el.textContent = text;
+    const colors = {
+      ok: ['var(--success-bg)', 'var(--success-text)'],
+      warn: ['var(--warning-bg)', 'var(--warning-text)'],
+      bad: ['var(--danger-bg)', 'var(--danger-text)']
+    };
+    const [bg, fg] = colors[status] || colors.ok;
+    el.style.background = bg;
+    el.style.color = fg;
+  }
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith('video/')) return;
+    videoFile = file;
+    if (videoUrl) URL.revokeObjectURL(videoUrl);
+    videoUrl = URL.createObjectURL(file);
+
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.src = videoUrl;
+    v.onloadedmetadata = () => {
+      videoMeta = { width: v.videoWidth, height: v.videoHeight, duration: v.duration };
+      $('fileInfo').style.display = 'block';
+      $('controls').style.display = 'block';
+      $('fileName').textContent = file.name;
+      $('fileMeta').textContent = `${v.videoWidth}×${v.videoHeight} · ${v.duration.toFixed(1)}s · ${fmtBytes(file.size)}`;
+
+      const sizeMB = file.size / (1024*1024);
+      if (sizeMB <= CLAUDE_LIMIT_MB) setBadge($('fileBadge'), 'Within limit', 'ok');
+      else if (sizeMB < CLAUDE_LIMIT_MB * 2) setBadge($('fileBadge'), 'Over limit', 'warn');
+      else setBadge($('fileBadge'), 'Way over limit', 'bad');
+
+      updateEstimate();
+    };
+  }
+
+  function updateEstimate() {
+    if (!videoFile) return;
+    const target = parseInt($('targetSize').value);
+    const scale = parseInt($('scaleSlider').value) / 100;
+    const origMB = videoFile.size / (1024*1024);
+    const estByScale = origMB * scale * scale * 0.7;
+    const est = Math.min(target, estByScale);
+    const reduction = Math.max(0, Math.round((1 - est/origMB) * 100));
+    $('estSize').textContent = est.toFixed(1) + ' MB';
+    $('reduction').textContent = '−' + reduction + '%';
+  }
+
+  $('dropzone').addEventListener('click', () => $('fileInput').click());
+  $('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
+  ['dragover', 'dragenter'].forEach(ev => $('dropzone').addEventListener(ev, e => {
+    e.preventDefault(); $('dropzone').classList.add('drag-over');
+  }));
+  ['dragleave', 'drop'].forEach(ev => $('dropzone').addEventListener(ev, e => {
+    e.preventDefault(); $('dropzone').classList.remove('drag-over');
+  }));
+  $('dropzone').addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+  $('targetSize').addEventListener('input', e => {
+    $('targetOut').textContent = e.target.value + ' MB';
+    updateEstimate();
+  });
+  $('scaleSlider').addEventListener('input', e => {
+    $('scaleOut').textContent = e.target.value + '%';
+    updateEstimate();
+  });
+
+  document.querySelectorAll('.fmt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('fmt-active'));
+      btn.classList.add('fmt-active');
+      format = btn.dataset.fmt;
+    });
+  });
+
+  async function compress() {
+    if (!videoFile) return;
+    $('processBtn').disabled = true;
+    $('processBtn').textContent = 'Compressing…';
+    $('progressWrap').style.display = 'block';
+    $('resultWrap').style.display = 'none';
+    $('progressLabel').textContent = 'Processing…';
+
+    const scale = parseInt($('scaleSlider').value) / 100;
+    const targetMB = parseInt($('targetSize').value);
+
+    try {
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.muted = true;
+      await new Promise(r => video.onloadedmetadata = r);
+
+      const W = Math.round(video.videoWidth * scale / 2) * 2;
+      const H = Math.round(video.videoHeight * scale / 2) * 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      const duration = video.duration;
+      const origMB = videoFile.size / (1024*1024);
+      const targetBitrate = Math.min(
+        (targetMB * 8 * 1024 * 1024) / duration,
+        origMB * scale * scale * 8 * 1024 * 1024 / duration * 0.7
+      );
+
+      const mimeMap = {
+        mp4: 'video/mp4;codecs=avc1.42E01E',
+        webm: 'video/webm;codecs=vp9',
+        mov: 'video/mp4;codecs=avc1.42E01E'
+      };
+      let mime = mimeMap[format];
+      if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp9';
+      if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
+
+      const stream = canvas.captureStream(30);
+      const recorder = new MediaRecorder(stream, {
+        mimeType: mime,
+        videoBitsPerSecond: Math.round(targetBitrate)
+      });
+
+      const chunks = [];
+      recorder.ondataavailable = e => e.data.size > 0 && chunks.push(e.data);
+
+      const done = new Promise(r => recorder.onstop = r);
+      recorder.start();
+      video.currentTime = 0;
+      await video.play();
+
+      const interval = setInterval(() => {
+        ctx.drawImage(video, 0, 0, W, H);
+        const pct = Math.min(99, Math.round((video.currentTime / duration) * 100));
+        $('progressBar').style.width = pct + '%';
+        $('progressPct').textContent = pct + '%';
+      }, 1000/30);
+
+      video.onended = () => {
+        clearInterval(interval);
+        recorder.stop();
+      };
+
+      await done;
+      const blob = new Blob(chunks, { type: mime.split(';')[0] });
+      const url = URL.createObjectURL(blob);
+
+      $('progressBar').style.width = '100%';
+      $('progressPct').textContent = '100%';
+      $('progressLabel').textContent = 'Complete';
+
+      const blobMB = blob.size / (1024*1024);
+      $('resultSize').textContent = blobMB.toFixed(1) + ' MB';
+      if (blobMB <= CLAUDE_LIMIT_MB) setBadge($('resultBadge'), 'Ready for Claude', 'ok');
+      else setBadge($('resultBadge'), 'Still too large', 'warn');
+
+      $('resultPreview').src = url;
+      const ext = mime.includes('webm') ? 'webm' : 'mp4';
+      const baseName = videoFile.name.replace(/\.[^.]+$/, '');
+      $('downloadLink').href = url;
+      $('downloadLink').download = `${baseName}_compressed.${ext}`;
+      $('resultWrap').style.display = 'block';
+
+      $('processBtn').disabled = false;
+      $('processBtn').textContent = 'Compress again';
+    } catch (err) {
+      $('progressLabel').textContent = 'Error: ' + err.message;
+      $('processBtn').disabled = false;
+      $('processBtn').textContent = 'Try again';
+    }
+  }
+
+  $('processBtn').addEventListener('click', compress);
+})();
+</script>
+
+</body>
+</html>

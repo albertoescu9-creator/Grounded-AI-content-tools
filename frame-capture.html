@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frame capture · GroundedAI</title>
+<style>
+  :root {
+    --copper: #DA7E3A;
+    --ember: #C86E30;
+    --steel: #3791CF;
+    --ink: #1a1a1a;
+    --bg-page: #F5F4EF;
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F1EFE8;
+    --bg-tertiary: #E8E5DB;
+    --text-primary: #1a1a1a;
+    --text-secondary: #5F5E5A;
+    --text-tertiary: #888780;
+    --border-tertiary: rgba(26, 26, 26, 0.12);
+    --border-secondary: rgba(26, 26, 26, 0.25);
+    --success-bg: #EAF3DE;
+    --success-text: #3B6D11;
+    --warning-bg: #FAEEDA;
+    --warning-text: #854F0B;
+    --danger-bg: #FCEBEB;
+    --danger-text: #A32D2D;
+    --info-bg: #E6F1FB;
+    --info-text: #0C447C;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", "Geist Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .page { max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .page-header { margin-bottom: 1.5rem; }
+  .brand-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .brand-mark .dot { width: 10px; height: 10px; background: var(--copper); border-radius: 2px; }
+  .brand-mark .name { font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); font-family: var(--font-mono); }
+
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; line-height: 1.15; }
+  .subtitle { font-size: 15px; color: var(--text-secondary); margin: 0; }
+
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-lg); overflow: hidden; }
+
+  .card-header { background: var(--ink); padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 12px; border-bottom: 3px solid var(--copper); }
+  .card-header .icon-box { width: 28px; height: 28px; background: var(--copper); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .card-header .title { margin: 0; color: #ffffff; font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+  .card-header .sub { margin: 0; color: #888; font-size: 12px; }
+  .card-header .tag { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .card-body { padding: 1.5rem; }
+
+  .dropzone { border: 2px dashed var(--border-secondary); border-radius: var(--radius-lg); padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg-secondary); }
+  .dropzone:hover, .dropzone.drag-over { border-color: var(--copper); background: var(--bg-primary); }
+  .dropzone .upload-icon { width: 44px; height: 44px; background: var(--copper); border-radius: 8px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; }
+  .dropzone .primary-text { margin: 0 0 4px; font-size: 14px; font-weight: 500; }
+  .dropzone .meta-text { margin: 0; font-size: 12px; color: var(--text-secondary); }
+
+  .player-section { display: none; }
+
+  .video-wrap { position: relative; background: #000; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 12px; }
+  .video-wrap video { width: 100%; display: block; max-height: 480px; }
+
+  .file-meta-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 3px solid var(--steel); margin-bottom: 1.25rem; }
+  .file-name { margin: 0; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-meta { margin: 2px 0 0; font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono); }
+  .badge { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+
+  .scrubber-block { margin-bottom: 1rem; }
+  .scrubber-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .scrubber-label { font-size: 13px; font-weight: 500; }
+  .timecode { font-size: 13px; font-weight: 500; font-family: var(--font-mono); color: var(--copper); }
+  input[type="range"].scrubber { width: 100%; -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
+  input[type="range"].scrubber::-webkit-slider-runnable-track { height: 6px; background: var(--bg-tertiary); border-radius: 3px; }
+  input[type="range"].scrubber::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: var(--copper); border-radius: 50%; margin-top: -6px; border: 2px solid var(--bg-primary); box-shadow: 0 0 0 1px var(--border-secondary); }
+  input[type="range"].scrubber::-moz-range-track { height: 6px; background: var(--bg-tertiary); border-radius: 3px; }
+  input[type="range"].scrubber::-moz-range-thumb { width: 18px; height: 18px; background: var(--copper); border-radius: 50%; border: 2px solid var(--bg-primary); box-shadow: 0 0 0 1px var(--border-secondary); }
+
+  .transport { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 1rem; }
+  .transport-btn { padding: 10px 4px; font-size: 11px; font-weight: 500; font-family: var(--font-mono); border-radius: var(--radius-md); cursor: pointer; background: transparent; border: 0.5px solid var(--border-secondary); color: var(--text-primary); transition: all 0.1s; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .transport-btn:hover { background: var(--bg-secondary); border-color: var(--copper); }
+  .transport-btn.play { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+  .transport-btn.play:hover { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+  .transport-btn svg { width: 12px; height: 12px; }
+
+  .options-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .option-block { background: var(--bg-secondary); padding: 10px 12px; border-radius: var(--radius-md); }
+  .option-label { margin: 0 0 6px; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .option-control { display: flex; gap: 4px; }
+  .seg-btn { flex: 1; padding: 7px 8px; font-size: 11px; font-weight: 500; font-family: var(--font-sans); border-radius: 6px; cursor: pointer; background: transparent; border: 0.5px solid var(--border-secondary); color: var(--text-secondary); transition: all 0.15s; }
+  .seg-btn:hover { background: var(--bg-primary); }
+  .seg-btn.active { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+
+  .capture-bar { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 1.5rem; }
+  .capture-btn { padding: 14px; background: var(--copper); color: var(--ink); border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; font-family: var(--font-sans); cursor: pointer; transition: background 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .capture-btn:hover { background: var(--ember); }
+  .capture-btn svg { width: 16px; height: 16px; }
+  .capture-btn:disabled { background: var(--bg-secondary); color: var(--text-tertiary); cursor: not-allowed; }
+  .quick-jump-btn { padding: 14px 8px; background: transparent; border: 0.5px solid var(--border-secondary); color: var(--text-primary); border-radius: var(--radius-md); font-size: 12px; font-family: var(--font-mono); font-weight: 500; cursor: pointer; transition: all 0.1s; }
+  .quick-jump-btn:hover { background: var(--bg-secondary); border-color: var(--copper); }
+
+  .captures-section { display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border-tertiary); }
+  .captures-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .captures-title { margin: 0; font-size: 16px; font-weight: 500; }
+  .captures-count { font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono); margin-left: 6px; }
+  .captures-actions { display: flex; gap: 8px; }
+  .action-btn { padding: 8px 14px; font-size: 12px; font-weight: 500; font-family: var(--font-sans); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; border: 0.5px solid var(--border-secondary); background: transparent; color: var(--text-primary); }
+  .action-btn:hover { background: var(--bg-secondary); }
+  .action-btn.primary { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+  .action-btn.primary:hover { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+  .action-btn.danger:hover { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-bg); }
+
+  .captures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .capture-card { background: var(--bg-secondary); border-radius: var(--radius-md); overflow: hidden; transition: transform 0.1s; }
+  .capture-card:hover { transform: translateY(-1px); }
+  .capture-thumb { position: relative; background: #000; aspect-ratio: 16/9; overflow: hidden; }
+  .capture-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .capture-time { position: absolute; bottom: 6px; left: 6px; background: rgba(0,0,0,0.75); color: #fff; font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; }
+  .capture-meta { padding: 8px 10px; }
+  .capture-info { font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); margin-bottom: 6px; }
+  .capture-buttons { display: grid; grid-template-columns: 1fr auto; gap: 4px; }
+  .capture-mini-btn { padding: 5px 8px; font-size: 11px; font-weight: 500; font-family: var(--font-sans); border-radius: 4px; cursor: pointer; background: var(--bg-primary); border: 0.5px solid var(--border-tertiary); color: var(--text-primary); text-decoration: none; text-align: center; transition: all 0.1s; }
+  .capture-mini-btn:hover { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+  .capture-mini-btn.icon-only { padding: 5px 7px; }
+  .capture-mini-btn.danger:hover { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-bg); }
+  .capture-mini-btn svg { width: 12px; height: 12px; vertical-align: middle; }
+
+  .footer-row { margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid var(--border-tertiary); display: flex; justify-content: space-between; align-items: center; }
+  .footer-text { margin: 0; font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+  .swatch-row { display: flex; gap: 4px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  .footnote { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--bg-primary); border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-md); font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .footnote strong { color: var(--text-primary); font-weight: 500; }
+  .footnote code { background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); }
+
+  .keyboard-hint { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; background: var(--bg-secondary); border: 0.5px solid var(--border-tertiary); border-radius: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); margin-left: 4px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.2s; pointer-events: none; z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) {
+    .transport { grid-template-columns: repeat(4, 1fr); }
+    .capture-bar { grid-template-columns: 1fr; }
+    .options-row { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page: #1a1a1a;
+      --bg-primary: #242424;
+      --bg-secondary: #2c2c2a;
+      --bg-tertiary: #3a3a38;
+      --text-primary: #f5f4ef;
+      --text-secondary: #b4b2a9;
+      --text-tertiary: #888780;
+      --border-tertiary: rgba(245, 244, 239, 0.12);
+      --border-secondary: rgba(245, 244, 239, 0.25);
+      --success-bg: #173404;
+      --success-text: #C0DD97;
+      --warning-bg: #412402;
+      --warning-text: #FAC775;
+      --danger-bg: #501313;
+      --danger-text: #F7C1C1;
+      --info-bg: #042C53;
+      --info-text: #B5D4F4;
+    }
+    .seg-btn.active { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+    .action-btn.primary { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+    .transport-btn.play { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+    input[type="range"].scrubber::-webkit-slider-thumb { border-color: var(--bg-primary); }
+    input[type="range"].scrubber::-moz-range-thumb { border-color: var(--bg-primary); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="brand-mark">
+      <span class="dot"></span>
+      <span class="name">GroundedAI · Internal tool</span>
+    </div>
+    <h1>Frame capture</h1>
+    <p class="subtitle">Pull high-quality stills from any video. Frame-by-frame seek, multi-capture, bulk download. Local processing.</p>
+  </div>
+
+  <div class="card">
+
+    <div class="card-header">
+      <div class="icon-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      </div>
+      <div>
+        <p class="title">Frame capture</p>
+        <p class="sub">High-quality stills from video</p>
+      </div>
+      <div class="tag">Bold Copper v3</div>
+    </div>
+
+    <div class="card-body">
+
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="fileInput" accept="video/*" style="display: none;" />
+        <div class="upload-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </div>
+        <p class="primary-text">Drop video here or click to browse</p>
+        <p class="meta-text">MP4, MOV, WebM, AVI · captures at source resolution</p>
+      </div>
+
+      <div id="playerSection" class="player-section">
+
+        <div class="video-wrap">
+          <video id="sourceVideo" muted playsinline></video>
+        </div>
+
+        <div class="file-meta-bar">
+          <div style="min-width: 0; flex: 1;">
+            <p id="fileName" class="file-name"></p>
+            <p id="fileMeta" class="file-meta"></p>
+          </div>
+          <span id="fileBadge" class="badge"></span>
+        </div>
+
+        <div class="scrubber-block">
+          <div class="scrubber-row">
+            <label class="scrubber-label">Timeline</label>
+            <span id="timecode" class="timecode">00:00.000 / 00:00.000</span>
+          </div>
+          <input type="range" id="scrubber" class="scrubber" min="0" max="1000" value="0" step="1" />
+        </div>
+
+        <div class="transport">
+          <button class="transport-btn" id="goStart" title="Go to start">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19 5v14L8 12l11-7zM5 5h2v14H5z"/></svg>
+            Start
+          </button>
+          <button class="transport-btn" id="back1s" title="Back 1 second">−1s</button>
+          <button class="transport-btn" id="backFrame" title="Previous frame">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15 6l-6 6 6 6V6z"/></svg>
+            −1f
+          </button>
+          <button class="transport-btn play" id="playPause" title="Play / pause (space)">
+            <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7L8 5z"/></svg>
+            <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none;"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+          </button>
+          <button class="transport-btn" id="fwdFrame" title="Next frame">
+            +1f
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9 6l6 6-6 6V6z"/></svg>
+          </button>
+          <button class="transport-btn" id="fwd1s" title="Forward 1 second">+1s</button>
+          <button class="transport-btn" id="goEnd" title="Go to end">
+            End
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 5l11 7-11 7V5zM17 5h2v14h-2z"/></svg>
+          </button>
+        </div>
+
+        <div class="options-row">
+          <div class="option-block">
+            <p class="option-label">Format</p>
+            <div class="option-control">
+              <button class="seg-btn active" data-format="png">PNG</button>
+              <button class="seg-btn" data-format="jpg">JPG</button>
+              <button class="seg-btn" data-format="webp">WebP</button>
+            </div>
+          </div>
+          <div class="option-block">
+            <p class="option-label">Quality (lossy formats)</p>
+            <div class="option-control">
+              <button class="seg-btn" data-quality="0.85">Web</button>
+              <button class="seg-btn active" data-quality="0.95">High</button>
+              <button class="seg-btn" data-quality="1.0">Max</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="capture-bar">
+          <button id="captureBtn" class="capture-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="4"></circle><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path></svg>
+            Capture frame
+            <span class="keyboard-hint">C</span>
+          </button>
+          <button id="captureBurstBtn" class="quick-jump-btn" title="Capture 5 evenly spaced frames">+ 5 frames</button>
+        </div>
+
+        <div id="capturesSection" class="captures-section">
+          <div class="captures-header">
+            <h3 class="captures-title">Captures<span id="capturesCount" class="captures-count">0</span></h3>
+            <div class="captures-actions">
+              <button id="downloadAllBtn" class="action-btn primary">Download all</button>
+              <button id="clearAllBtn" class="action-btn danger">Clear</button>
+            </div>
+          </div>
+          <div id="capturesGrid" class="captures-grid"></div>
+        </div>
+
+      </div>
+
+      <div class="footer-row">
+        <p class="footer-text">Local processing · nothing uploaded</p>
+        <div class="swatch-row">
+          <span class="swatch" style="background: #DA7E3A;"></span>
+          <span class="swatch" style="background: #3791CF;"></span>
+          <span class="swatch" style="background: #1a1a1a;"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>How to use:</strong> Drop a video, scrub to the frame you want, hit <code>Capture frame</code> or press <code>C</code>. Frames are saved at source resolution. Use <code>−1f</code> / <code>+1f</code> for frame-precise stepping (assumes 30fps source — adjust for slower sources). <code>+ 5 frames</code> drops 5 evenly spaced captures across the whole clip — useful for picking thumbnails or building hero grids fast. <strong>Keyboard:</strong> <code>Space</code> play/pause, <code>C</code> capture, <code>←/→</code> step 1 second, <code>Shift+←/→</code> step 1 frame.
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function() {
+  let videoFile = null;
+  let videoUrl = null;
+  let videoMeta = { width: 0, height: 0, duration: 0 };
+  let captures = [];
+  let captureIdCounter = 0;
+  let format = 'png';
+  let quality = 0.95;
+  const FRAME_STEP = 1 / 30;
+
+  const $ = id => document.getElementById(id);
+  const fmtBytes = b => b < 1024*1024 ? (b/1024).toFixed(1)+' KB' : (b/(1024*1024)).toFixed(2)+' MB';
+
+  function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s - m * 60;
+    return `${String(m).padStart(2,'0')}:${sec.toFixed(3).padStart(6,'0')}`;
+  }
+
+  function setBadge(el, text, status) {
+    el.textContent = text;
+    const colors = {
+      ok: ['var(--success-bg)', 'var(--success-text)'],
+      warn: ['var(--warning-bg)', 'var(--warning-text)'],
+      bad: ['var(--danger-bg)', 'var(--danger-text)'],
+      info: ['var(--info-bg)', 'var(--info-text)']
+    };
+    const [bg, fg] = colors[status] || colors.ok;
+    el.style.background = bg;
+    el.style.color = fg;
+  }
+
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith('video/')) return;
+    videoFile = file;
+    if (videoUrl) URL.revokeObjectURL(videoUrl);
+    videoUrl = URL.createObjectURL(file);
+
+    const v = $('sourceVideo');
+    v.src = videoUrl;
+    v.onloadedmetadata = () => {
+      videoMeta = { width: v.videoWidth, height: v.videoHeight, duration: v.duration };
+      $('playerSection').style.display = 'block';
+      $('fileName').textContent = file.name;
+      $('fileMeta').textContent = `${v.videoWidth}×${v.videoHeight} · ${v.duration.toFixed(1)}s · ${fmtBytes(file.size)}`;
+      setBadge($('fileBadge'), 'Loaded', 'info');
+      updateTimecode();
+    };
+  }
+
+  function updateScrubber() {
+    if (!videoMeta.duration) return;
+    const v = $('sourceVideo');
+    const pct = (v.currentTime / videoMeta.duration) * 1000;
+    $('scrubber').value = pct;
+    updateTimecode();
+  }
+
+  function updateTimecode() {
+    const v = $('sourceVideo');
+    $('timecode').textContent = `${fmtTime(v.currentTime)} / ${fmtTime(videoMeta.duration)}`;
+  }
+
+  function seekTo(t) {
+    const v = $('sourceVideo');
+    v.currentTime = Math.max(0, Math.min(videoMeta.duration, t));
+  }
+
+  function captureFrame(t) {
+    return new Promise(resolve => {
+      const v = $('sourceVideo');
+      const targetT = t === undefined ? v.currentTime : t;
+
+      const doCapture = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoMeta.width;
+        canvas.height = videoMeta.height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(v, 0, 0, videoMeta.width, videoMeta.height);
+
+        const mimeMap = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
+        const mime = mimeMap[format];
+        const q = format === 'png' ? undefined : quality;
+
+        canvas.toBlob(blob => {
+          const id = ++captureIdCounter;
+          const url = URL.createObjectURL(blob);
+          captures.push({
+            id,
+            url,
+            blob,
+            time: v.currentTime,
+            format,
+            width: videoMeta.width,
+            height: videoMeta.height,
+            size: blob.size
+          });
+          renderCaptures();
+          resolve();
+        }, mime, q);
+      };
+
+      if (Math.abs(v.currentTime - targetT) > 0.001) {
+        const onSeeked = () => {
+          v.removeEventListener('seeked', onSeeked);
+          doCapture();
+        };
+        v.addEventListener('seeked', onSeeked);
+        v.currentTime = targetT;
+      } else {
+        doCapture();
+      }
+    });
+  }
+
+  function renderCaptures() {
+    const grid = $('capturesGrid');
+    if (captures.length === 0) {
+      $('capturesSection').style.display = 'none';
+      return;
+    }
+    $('capturesSection').style.display = 'block';
+    $('capturesCount').textContent = captures.length;
+
+    grid.innerHTML = captures.map(c => {
+      const baseName = videoFile.name.replace(/\.[^.]+$/, '');
+      const filename = `${baseName}_${fmtTime(c.time).replace(/:/g, '-')}.${c.format === 'jpg' ? 'jpg' : c.format}`;
+      return `
+        <div class="capture-card" data-id="${c.id}">
+          <div class="capture-thumb">
+            <img src="${c.url}" alt="Frame at ${c.time.toFixed(2)}s" />
+            <span class="capture-time">${fmtTime(c.time)}</span>
+          </div>
+          <div class="capture-meta">
+            <p class="capture-info">${c.width}×${c.height} · ${c.format.toUpperCase()} · ${fmtBytes(c.size)}</p>
+            <div class="capture-buttons">
+              <a href="${c.url}" download="${filename}" class="capture-mini-btn">Download</a>
+              <button class="capture-mini-btn icon-only danger" data-action="delete" data-id="${c.id}" title="Delete">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        const idx = captures.findIndex(c => c.id === id);
+        if (idx > -1) {
+          URL.revokeObjectURL(captures[idx].url);
+          captures.splice(idx, 1);
+          renderCaptures();
+        }
+      });
+    });
+
+    grid.querySelectorAll('.capture-thumb img').forEach((img, i) => {
+      img.addEventListener('click', () => seekTo(captures[i].time));
+      img.style.cursor = 'pointer';
+    });
+  }
+
+  async function downloadAll() {
+    if (captures.length === 0) return;
+    if (captures.length === 1) {
+      const c = captures[0];
+      const baseName = videoFile.name.replace(/\.[^.]+$/, '');
+      const filename = `${baseName}_${fmtTime(c.time).replace(/:/g, '-')}.${c.format === 'jpg' ? 'jpg' : c.format}`;
+      const a = document.createElement('a');
+      a.href = c.url;
+      a.download = filename;
+      a.click();
+      return;
+    }
+    showToast(`Downloading ${captures.length} frames...`);
+    const baseName = videoFile.name.replace(/\.[^.]+$/, '');
+    for (let i = 0; i < captures.length; i++) {
+      const c = captures[i];
+      const filename = `${baseName}_${fmtTime(c.time).replace(/:/g, '-')}.${c.format === 'jpg' ? 'jpg' : c.format}`;
+      const a = document.createElement('a');
+      a.href = c.url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      await new Promise(r => setTimeout(r, 120));
+    }
+  }
+
+  function clearAll() {
+    if (captures.length === 0) return;
+    if (!confirm(`Clear all ${captures.length} captures? This cannot be undone.`)) return;
+    captures.forEach(c => URL.revokeObjectURL(c.url));
+    captures = [];
+    renderCaptures();
+  }
+
+  async function captureBurst() {
+    const count = 5;
+    const v = $('sourceVideo');
+    v.pause();
+    showToast(`Capturing ${count} frames...`);
+    for (let i = 0; i < count; i++) {
+      const t = (videoMeta.duration / (count + 1)) * (i + 1);
+      await captureFrame(t);
+    }
+    showToast(`Captured ${count} frames`);
+  }
+
+  $('dropzone').addEventListener('click', () => $('fileInput').click());
+  $('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
+  ['dragover', 'dragenter'].forEach(ev => $('dropzone').addEventListener(ev, e => {
+    e.preventDefault(); $('dropzone').classList.add('drag-over');
+  }));
+  ['dragleave', 'drop'].forEach(ev => $('dropzone').addEventListener(ev, e => {
+    e.preventDefault(); $('dropzone').classList.remove('drag-over');
+  }));
+  $('dropzone').addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+  const v = $('sourceVideo');
+  v.addEventListener('timeupdate', updateScrubber);
+  v.addEventListener('seeked', updateTimecode);
+  v.addEventListener('play', () => { $('playIcon').style.display = 'none'; $('pauseIcon').style.display = 'block'; });
+  v.addEventListener('pause', () => { $('playIcon').style.display = 'block'; $('pauseIcon').style.display = 'none'; });
+
+  $('scrubber').addEventListener('input', e => {
+    const t = (parseInt(e.target.value) / 1000) * videoMeta.duration;
+    seekTo(t);
+  });
+
+  $('playPause').addEventListener('click', () => {
+    if (v.paused) v.play(); else v.pause();
+  });
+  $('goStart').addEventListener('click', () => seekTo(0));
+  $('goEnd').addEventListener('click', () => seekTo(videoMeta.duration));
+  $('back1s').addEventListener('click', () => { v.pause(); seekTo(v.currentTime - 1); });
+  $('fwd1s').addEventListener('click', () => { v.pause(); seekTo(v.currentTime + 1); });
+  $('backFrame').addEventListener('click', () => { v.pause(); seekTo(v.currentTime - FRAME_STEP); });
+  $('fwdFrame').addEventListener('click', () => { v.pause(); seekTo(v.currentTime + FRAME_STEP); });
+
+  document.querySelectorAll('[data-format]').forEach(b => {
+    b.addEventListener('click', () => {
+      format = b.dataset.format;
+      document.querySelectorAll('[data-format]').forEach(x => x.classList.toggle('active', x.dataset.format === format));
+    });
+  });
+  document.querySelectorAll('[data-quality]').forEach(b => {
+    b.addEventListener('click', () => {
+      quality = parseFloat(b.dataset.quality);
+      document.querySelectorAll('[data-quality]').forEach(x => x.classList.toggle('active', x.dataset.quality === b.dataset.quality));
+    });
+  });
+
+  $('captureBtn').addEventListener('click', async () => {
+    v.pause();
+    await captureFrame();
+    showToast(`Frame captured at ${fmtTime(v.currentTime)}`);
+  });
+  $('captureBurstBtn').addEventListener('click', captureBurst);
+  $('downloadAllBtn').addEventListener('click', downloadAll);
+  $('clearAllBtn').addEventListener('click', clearAll);
+
+  document.addEventListener('keydown', async e => {
+    if (!videoFile) return;
+    const target = e.target;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (v.paused) v.play(); else v.pause();
+    } else if (e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      v.pause();
+      await captureFrame();
+      showToast(`Frame captured at ${fmtTime(v.currentTime)}`);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      v.pause();
+      seekTo(v.currentTime - (e.shiftKey ? FRAME_STEP : 1));
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      v.pause();
+      seekTo(v.currentTime + (e.shiftKey ? FRAME_STEP : 1));
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
