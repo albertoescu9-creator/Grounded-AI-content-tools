@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speed up · GroundedAI</title>
+<style>
+  :root {
+    --copper: #DA7E3A;
+    --ember: #C86E30;
+    --steel: #3791CF;
+    --ink: #1a1a1a;
+    --bg-page: #F5F4EF;
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F1EFE8;
+    --bg-tertiary: #E8E5DB;
+    --text-primary: #1a1a1a;
+    --text-secondary: #5F5E5A;
+    --text-tertiary: #888780;
+    --border-tertiary: rgba(26, 26, 26, 0.12);
+    --border-secondary: rgba(26, 26, 26, 0.25);
+    --success-bg: #EAF3DE;
+    --success-text: #3B6D11;
+    --warning-bg: #FAEEDA;
+    --warning-text: #854F0B;
+    --danger-bg: #FCEBEB;
+    --danger-text: #A32D2D;
+    --info-bg: #E6F1FB;
+    --info-text: #0C447C;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", "Geist Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .page { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .page-header { margin-bottom: 1.5rem; }
+  .brand-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .brand-mark .dot { width: 10px; height: 10px; background: var(--copper); border-radius: 2px; }
+  .brand-mark .name { font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); font-family: var(--font-mono); }
+
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; line-height: 1.15; }
+  .subtitle { font-size: 15px; color: var(--text-secondary); margin: 0; }
+
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-lg); overflow: hidden; }
+
+  .card-header { background: var(--ink); padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 12px; border-bottom: 3px solid var(--copper); }
+  .card-header .icon-box { width: 28px; height: 28px; background: var(--copper); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .card-header .title { margin: 0; color: #ffffff; font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+  .card-header .sub { margin: 0; color: #888; font-size: 12px; }
+  .card-header .tag { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .card-body { padding: 1.5rem; }
+
+  .dropzone { border: 2px dashed var(--border-secondary); border-radius: var(--radius-lg); padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg-secondary); }
+  .dropzone:hover, .dropzone.drag-over { border-color: var(--copper); background: var(--bg-primary); }
+  .dropzone .upload-icon { width: 44px; height: 44px; background: var(--copper); border-radius: 8px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; }
+  .dropzone .primary-text { margin: 0 0 4px; font-size: 14px; font-weight: 500; }
+  .dropzone .meta-text { margin: 0; font-size: 12px; color: var(--text-secondary); }
+
+  .preview-section { display: none; margin-top: 1rem; }
+  .video-wrap { position: relative; background: #000; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 12px; }
+  .video-wrap video { width: 100%; display: block; max-height: 360px; }
+
+  .file-meta-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 3px solid var(--steel); }
+  .file-name { margin: 0; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-meta { margin: 2px 0 0; font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono); }
+  .badge { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+
+  .controls { display: none; margin-top: 1.5rem; }
+  .control-block { margin-bottom: 1.25rem; }
+  .control-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .control-label { font-size: 13px; font-weight: 500; }
+  .control-value { font-size: 13px; font-weight: 500; font-family: var(--font-mono); }
+  .control-value.copper { color: var(--copper); }
+  .control-value.steel { color: var(--steel); }
+
+  .speed-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 8px; }
+  .speed-btn { padding: 10px 4px; font-size: 12px; font-weight: 500; font-family: var(--font-mono); border-radius: var(--radius-md); cursor: pointer; background: transparent; border: 0.5px solid var(--border-secondary); color: var(--text-secondary); transition: all 0.1s; }
+  .speed-btn:hover { background: var(--bg-secondary); border-color: var(--copper); }
+  .speed-btn.active { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+
+  .speed-custom-row { display: flex; align-items: center; gap: 12px; }
+  .speed-custom-row input[type="range"] { flex: 1; }
+  .speed-custom-input { width: 80px; padding: 8px 10px; font-size: 13px; font-family: var(--font-mono); border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); text-align: center; }
+  .speed-custom-input:focus { outline: 2px solid var(--copper); outline-offset: -1px; border-color: var(--copper); }
+
+  input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: var(--bg-tertiary); border-radius: 2px; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: var(--copper); border-radius: 50%; margin-top: -7px; border: 2px solid var(--bg-primary); box-shadow: 0 0 0 1px var(--border-secondary); }
+  input[type="range"]::-moz-range-track { height: 4px; background: var(--bg-tertiary); border-radius: 2px; }
+  input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--copper); border-radius: 50%; border: 2px solid var(--bg-primary); box-shadow: 0 0 0 1px var(--border-secondary); }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .seg-btn { padding: 10px; font-size: 12px; font-weight: 500; font-family: var(--font-sans); border-radius: var(--radius-md); cursor: pointer; background: transparent; border: 0.5px solid var(--border-secondary); color: var(--text-secondary); transition: all 0.15s; }
+  .seg-btn:hover { background: var(--bg-secondary); }
+  .seg-btn.active { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+
+  .estimate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1.25rem; }
+  .estimate-cell { background: var(--bg-secondary); padding: 10px 12px; border-radius: var(--radius-md); }
+  .estimate-label { margin: 0; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .estimate-value { margin: 2px 0 0; font-size: 15px; font-weight: 500; font-family: var(--font-mono); }
+
+  .audio-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg-secondary); border-radius: var(--radius-md); cursor: pointer; margin-bottom: 1.25rem; user-select: none; }
+  .audio-toggle input { width: 16px; height: 16px; accent-color: var(--copper); cursor: pointer; }
+  .audio-toggle .toggle-label { font-size: 13px; font-weight: 500; }
+  .audio-toggle .toggle-hint { font-size: 12px; color: var(--text-secondary); margin-left: auto; font-family: var(--font-mono); }
+
+  .process-btn { width: 100%; padding: 13px; background: var(--copper); color: var(--ink); border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; font-family: var(--font-sans); cursor: pointer; transition: background 0.15s; }
+  .process-btn:hover { background: var(--ember); }
+  .process-btn:disabled { background: var(--bg-secondary); color: var(--text-tertiary); cursor: not-allowed; }
+
+  .progress-wrap { display: none; margin-top: 1rem; }
+  .progress-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
+  .progress-label { color: var(--text-secondary); }
+  .progress-pct { color: var(--copper); font-family: var(--font-mono); font-weight: 500; }
+  .progress-track { height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden; }
+  .progress-bar { height: 100%; width: 0%; background: var(--copper); transition: width 0.2s; }
+
+  .result-wrap { display: none; margin-top: 1rem; padding: 14px; background: var(--bg-secondary); border-left: 3px solid var(--copper); border-radius: var(--radius-md); }
+  .result-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .result-label { margin: 0; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .result-size { margin: 2px 0 0; font-size: 18px; font-weight: 500; font-family: var(--font-mono); }
+  .result-savings { font-size: 12px; color: var(--success-text); font-weight: 500; margin-top: 2px; }
+  .result-preview { width: 100%; max-height: 320px; border-radius: var(--radius-md); background: #000; margin-bottom: 12px; display: block; }
+  .download-link { display: block; text-align: center; padding: 11px; background: var(--ink); color: #ffffff; text-decoration: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; transition: opacity 0.15s; }
+  .download-link:hover { opacity: 0.85; }
+
+  .footer-row { margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid var(--border-tertiary); display: flex; justify-content: space-between; align-items: center; }
+  .footer-text { margin: 0; font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+  .swatch-row { display: flex; gap: 4px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  .footnote { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--bg-primary); border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-md); font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .footnote strong { color: var(--text-primary); font-weight: 500; }
+  .footnote code { background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); }
+
+  @media (max-width: 600px) {
+    .speed-grid { grid-template-columns: repeat(4, 1fr); }
+    .estimate-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page: #1a1a1a;
+      --bg-primary: #242424;
+      --bg-secondary: #2c2c2a;
+      --bg-tertiary: #3a3a38;
+      --text-primary: #f5f4ef;
+      --text-secondary: #b4b2a9;
+      --text-tertiary: #888780;
+      --border-tertiary: rgba(245, 244, 239, 0.12);
+      --border-secondary: rgba(245, 244, 239, 0.25);
+      --success-bg: #173404;
+      --success-text: #C0DD97;
+      --warning-bg: #412402;
+      --warning-text: #FAC775;
+      --danger-bg: #501313;
+      --danger-text: #F7C1C1;
+      --info-bg: #042C53;
+      --info-text: #B5D4F4;
+    }
+    .seg-btn.active { background: var(--copper); color: var(--ink); border-color: var(--copper); }
+    .download-link { background: var(--copper); color: var(--ink); }
+    input[type="range"]::-webkit-slider-thumb { border-color: var(--bg-primary); }
+    input[type="range"]::-moz-range-thumb { border-color: var(--bg-primary); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="brand-mark">
+      <span class="dot"></span>
+      <span class="name">GroundedAI · Internal tool</span>
+    </div>
+    <h1>Speed up</h1>
+    <p class="subtitle">Compress long videos into fast watchable clips. 2x to 15x speed, optimized output. Local processing.</p>
+  </div>
+
+  <div class="card">
+
+    <div class="card-header">
+      <div class="icon-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+      </div>
+      <div>
+        <p class="title">Speed up</p>
+        <p class="sub">Time-lapse from any video</p>
+      </div>
+      <div class="tag">Bold Copper v3</div>
+    </div>
+
+    <div class="card-body">
+
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="fileInput" accept="video/*" style="display: none;" />
+        <div class="upload-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </div>
+        <p class="primary-text">Drop video here or click to browse</p>
+        <p class="meta-text">MP4, MOV, WebM, AVI</p>
+      </div>
+
+      <div id="previewSection" class="preview-section">
+        <div class="video-wrap">
+          <video id="sourceVideo" controls muted playsinline></video>
+        </div>
+        <div class="file-meta-bar">
+          <div style="min-width: 0; flex: 1;">
+            <p id="fileName" class="file-name"></p>
+            <p id="fileMeta" class="file-meta"></p>
+          </div>
+          <span id="fileBadge" class="badge"></span>
+        </div>
+      </div>
+
+      <div id="controls" class="controls">
+
+        <div class="control-block">
+          <div class="control-row">
+            <label class="control-label">Speed multiplier</label>
+            <span id="speedOut" class="control-value copper">4x</span>
+          </div>
+          <div class="speed-grid">
+            <button class="speed-btn" data-speed="2">2x</button>
+            <button class="speed-btn" data-speed="3">3x</button>
+            <button class="speed-btn active" data-speed="4">4x</button>
+            <button class="speed-btn" data-speed="5">5x</button>
+            <button class="speed-btn" data-speed="6">6x</button>
+            <button class="speed-btn" data-speed="8">8x</button>
+            <button class="speed-btn" data-speed="10">10x</button>
+            <button class="speed-btn" data-speed="15">15x</button>
+          </div>
+          <div class="speed-custom-row">
+            <input type="range" id="speedSlider" min="2" max="20" value="4" step="1" />
+            <input type="number" id="speedInput" class="speed-custom-input" min="2" max="20" value="4" step="1" />
+          </div>
+        </div>
+
+        <label class="audio-toggle">
+          <input type="checkbox" id="keepAudio" />
+          <span class="toggle-label">Keep audio (pitch-shifted)</span>
+          <span class="toggle-hint">off = silent, smaller file</span>
+        </label>
+
+        <div class="control-block">
+          <div class="control-row">
+            <label class="control-label">Output width</label>
+            <span id="widthOut" class="control-value steel">source</span>
+          </div>
+          <input type="range" id="widthSlider" min="240" max="1920" value="1280" step="40" />
+        </div>
+
+        <div class="control-block">
+          <label class="control-label" style="display: block; margin-bottom: 8px;">Compression preset</label>
+          <div class="grid-3">
+            <button class="seg-btn active" data-quality="web">Smallest file</button>
+            <button class="seg-btn" data-quality="balanced">Balanced</button>
+            <button class="seg-btn" data-quality="high">Best quality</button>
+          </div>
+        </div>
+
+        <div class="estimate-grid">
+          <div class="estimate-cell">
+            <p class="estimate-label">New duration</p>
+            <p id="estDuration" class="estimate-value">—</p>
+          </div>
+          <div class="estimate-cell">
+            <p class="estimate-label">Output</p>
+            <p id="estDimensions" class="estimate-value">—</p>
+          </div>
+          <div class="estimate-cell">
+            <p class="estimate-label">Est. file size</p>
+            <p id="estFileSize" class="estimate-value">—</p>
+          </div>
+        </div>
+
+        <button id="processBtn" class="process-btn">Speed up video</button>
+
+        <div id="progressWrap" class="progress-wrap">
+          <div class="progress-row">
+            <span id="progressLabel" class="progress-label">Processing…</span>
+            <span id="progressPct" class="progress-pct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </div>
+
+        <div id="resultWrap" class="result-wrap">
+          <div class="result-header">
+            <div style="min-width: 0; flex: 1;">
+              <p class="result-label">Sped-up video</p>
+              <p id="resultSize" class="result-size"></p>
+              <p id="resultSavings" class="result-savings"></p>
+            </div>
+            <span id="resultBadge" class="badge"></span>
+          </div>
+          <video id="resultPreview" class="result-preview" controls autoplay loop muted playsinline></video>
+          <a id="downloadLink" href="#" download class="download-link">Download sped-up video</a>
+        </div>
+
+      </div>
+
+      <div class="footer-row">
+        <p class="footer-text">Local processing · nothing uploaded</p>
+        <div class="swatch-row">
+          <span class="swatch" style="background: #DA7E3A;"></span>
+          <span class="swatch" style="background: #3791CF;"></span>
+          <span class="swatch" style="background: #1a1a1a;"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>How to use:</strong> Drop a video, pick a speed (or type a custom value up to 20x), choose output size and compression. <code>Smallest file</code> is best for sharing into Slack or Claude. <code>Best quality</code> when the sped-up video is going on the website. Audio is dropped by default — keep it on only if you need pitched-up audio (chipmunk effect). For drone or field footage at 4x–6x, the result usually looks like a smooth time-lapse and the file is dramatically smaller than the source.
+  </div>
+
+</div>
+
+<script>
+(function() {
+  let videoFile = null;
+  let videoUrl = null;
+  let videoMeta = { width: 0, height: 0, duration: 0 };
+  let speed = 4;
+  let quality = 'web';
+
+  const $ = id => document.getElementById(id);
+  const fmtBytes = b => b < 1024*1024 ? (b/1024).toFixed(1)+' KB' : (b/(1024*1024)).toFixed(2)+' MB';
+  const fmtTime = s => {
+    if (s < 60) return s.toFixed(1) + 's';
+    const m = Math.floor(s / 60);
+    const sec = (s - m * 60).toFixed(0);
+    return `${m}m ${sec}s`;
+  };
+
+  function setBadge(el, text, status) {
+    el.textContent = text;
+    const colors = {
+      ok: ['var(--success-bg)', 'var(--success-text)'],
+      warn: ['var(--warning-bg)', 'var(--warning-text)'],
+      bad: ['var(--danger-bg)', 'var(--danger-text)'],
+      info: ['var(--info-bg)', 'var(--info-text)']
+    };
+    const [bg, fg] = colors[status] || colors.ok;
+    el.style.background = bg;
+    el.style.color = fg;
+  }
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith('video/')) return;
+    videoFile = file;
+    if (videoUrl) URL.revokeObjectURL(videoUrl);
+    videoUrl = URL.createObjectURL(file);
+
+    const v = $('sourceVideo');
+    v.src = videoUrl;
+    v.onloadedmetadata = () => {
+      videoMeta = { width: v.videoWidth, height: v.videoHeight, duration: v.duration };
+      $('previewSection').style.display = 'block';
+      $('controls').style.display = 'block';
+      $('fileName').textContent = file.name;
+      $('fileMeta').textContent = `${v.videoWidth}×${v.videoHeight} · ${fmtTime(v.duration)} · ${fmtBytes(file.size)}`;
+      setBadge($('fileBadge'), 'Ready', 'info');
+
+      const maxW = Math.min(videoMeta.width, 1920);
+      $('widthSlider').max = maxW;
+      $('widthSlider').value = videoMeta.width;
+      $('widthOut').textContent = videoMeta.width + 'px';
+
+      updateEstimate();
+    };
+  }
+
+  function updateEstimate() {
+    if (!videoMeta.duration) return;
+    const W = parseInt($('widthSlider').value);
+    const aspect = videoMeta.height / videoMeta.width;
+    const H = Math.round(W * aspect / 2) * 2;
+    const newDur = videoMeta.duration / speed;
+
+    $('estDimensions').textContent = `${W}×${H}`;
+    $('estDuration').textContent = fmtTime(newDur);
+
+    const fps = 30;
+    const bpp = quality === 'web' ? 0.06 : quality === 'balanced' ? 0.10 : 0.16;
+    const bitrate = W * H * fps * bpp;
+    const estBytes = (bitrate * newDur) / 8;
+    $('estFileSize').textContent = fmtBytes(estBytes);
+  }
+
+  function setSpeed(newSpeed) {
+    speed = Math.max(2, Math.min(20, newSpeed));
+    $('speedOut').textContent = speed + 'x';
+    $('speedSlider').value = speed;
+    $('speedInput').value = speed;
+    document.querySelectorAll('.speed-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.speed) === speed);
+    });
+    updateEstimate();
+  }
+
+  function setQuality(newQ) {
+    quality = newQ;
+    document.querySelectorAll('[data-quality]').forEach(b => b.classList.toggle('active', b.dataset.quality === newQ));
+    updateEstimate();
+  }
+
+  $('dropzone').addEventListener('click', () => $('fileInput').click());
+  $('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
+  ['dragover', 'dragenter'].forEach(ev => $('dropzone').addEventListener(ev, e => {
+    e.preventDefault(); $('dropzone').classList.add('drag-over');
+  }));
+  ['dragleave', 'drop'].forEach(ev => $('dropzone').addEventListener(ev, e => {
+    e.preventDefault(); $('dropzone').classList.remove('drag-over');
+  }));
+  $('dropzone').addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+  document.querySelectorAll('.speed-btn').forEach(b => {
+    b.addEventListener('click', () => setSpeed(parseInt(b.dataset.speed)));
+  });
+  $('speedSlider').addEventListener('input', e => setSpeed(parseInt(e.target.value)));
+  $('speedInput').addEventListener('change', e => setSpeed(parseInt(e.target.value)));
+  $('widthSlider').addEventListener('input', e => { $('widthOut').textContent = e.target.value + 'px'; updateEstimate(); });
+  document.querySelectorAll('[data-quality]').forEach(b => b.addEventListener('click', () => setQuality(b.dataset.quality)));
+
+  async function speedUpVideo() {
+    const W = Math.round(parseInt($('widthSlider').value) / 2) * 2;
+    const aspect = videoMeta.height / videoMeta.width;
+    const H = Math.round(W * aspect / 2) * 2;
+    const keepAudio = $('keepAudio').checked;
+    const outputFps = 30;
+    const newDur = videoMeta.duration / speed;
+    const totalFrames = Math.round(newDur * outputFps);
+
+    const bpp = quality === 'web' ? 0.06 : quality === 'balanced' ? 0.10 : 0.16;
+    const videoBitrate = Math.round(W * H * outputFps * bpp);
+
+    const v = document.createElement('video');
+    v.src = videoUrl;
+    v.muted = !keepAudio;
+    v.playsInline = true;
+    if (keepAudio) v.playbackRate = Math.min(speed, 16);
+    await new Promise(r => v.onloadedmetadata = r);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const videoStream = canvas.captureStream(outputFps);
+    let combinedStream = videoStream;
+
+    if (keepAudio && v.captureStream) {
+      try {
+        const sourceStream = v.captureStream();
+        const audioTracks = sourceStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
+        }
+      } catch (e) {}
+    }
+
+    const mimeCandidates = [
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4;codecs=avc1.42E01E',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    let mime = mimeCandidates.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+
+    const recorderOpts = {
+      mimeType: mime,
+      videoBitsPerSecond: videoBitrate
+    };
+    if (keepAudio) recorderOpts.audioBitsPerSecond = 64000;
+
+    const recorder = new MediaRecorder(combinedStream, recorderOpts);
+    const chunks = [];
+    recorder.ondataavailable = e => e.data.size > 0 && chunks.push(e.data);
+    const done = new Promise(r => recorder.onstop = r);
+
+    if (keepAudio && v.playbackRate) {
+      recorder.start();
+      v.currentTime = 0;
+      await v.play();
+      const drawInterval = setInterval(() => {
+        ctx.drawImage(v, 0, 0, W, H);
+        const elapsed = v.currentTime;
+        const pct = Math.min(99, Math.round((elapsed / videoMeta.duration) * 100));
+        $('progressBar').style.width = pct + '%';
+        $('progressPct').textContent = pct + '%';
+      }, 1000 / outputFps);
+      v.onended = () => {
+        clearInterval(drawInterval);
+        recorder.stop();
+      };
+      await done;
+      clearInterval(drawInterval);
+    } else {
+      recorder.start();
+      const sourceStep = videoMeta.duration / totalFrames;
+      for (let i = 0; i < totalFrames; i++) {
+        const t = i * sourceStep;
+        if (t >= videoMeta.duration) break;
+        v.currentTime = t;
+        await new Promise(r => {
+          const onSeek = () => { v.removeEventListener('seeked', onSeek); r(); };
+          v.addEventListener('seeked', onSeek);
+        });
+        ctx.drawImage(v, 0, 0, W, H);
+        const pct = Math.min(99, Math.round((i / totalFrames) * 100));
+        $('progressBar').style.width = pct + '%';
+        $('progressPct').textContent = pct + '%';
+        await new Promise(r => setTimeout(r, 1000 / outputFps));
+      }
+      recorder.stop();
+      await done;
+    }
+
+    return new Blob(chunks, { type: mime.split(';')[0] });
+  }
+
+  async function process() {
+    if (!videoFile) return;
+    $('processBtn').disabled = true;
+    $('processBtn').textContent = 'Processing…';
+    $('progressWrap').style.display = 'block';
+    $('resultWrap').style.display = 'none';
+    $('progressBar').style.width = '0%';
+    $('progressPct').textContent = '0%';
+    $('progressLabel').textContent = `Encoding at ${speed}x…`;
+
+    try {
+      const blob = await speedUpVideo();
+      const url = URL.createObjectURL(blob);
+
+      $('progressBar').style.width = '100%';
+      $('progressPct').textContent = '100%';
+      $('progressLabel').textContent = 'Complete';
+
+      $('resultSize').textContent = fmtBytes(blob.size);
+      const reduction = Math.round((1 - blob.size / videoFile.size) * 100);
+      if (reduction > 0) {
+        $('resultSavings').textContent = `${reduction}% smaller than source · ${speed}x faster`;
+      } else {
+        $('resultSavings').textContent = `${speed}x faster · ${Math.abs(reduction)}% larger (try smaller width or web preset)`;
+      }
+
+      const blobMB = blob.size / (1024*1024);
+      if (blobMB <= 10) setBadge($('resultBadge'), 'Slack-ready', 'ok');
+      else if (blobMB <= 30) setBadge($('resultBadge'), 'Claude-ready', 'ok');
+      else setBadge($('resultBadge'), 'Heavy', 'warn');
+
+      $('resultPreview').src = url;
+      const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+      const baseName = videoFile.name.replace(/\.[^.]+$/, '');
+      $('downloadLink').href = url;
+      $('downloadLink').download = `${baseName}_${speed}x.${ext}`;
+      $('resultWrap').style.display = 'block';
+
+      $('processBtn').disabled = false;
+      $('processBtn').textContent = 'Speed up again';
+    } catch (err) {
+      $('progressLabel').textContent = 'Error: ' + err.message;
+      $('processBtn').disabled = false;
+      $('processBtn').textContent = 'Try again';
+    }
+  }
+
+  $('processBtn').addEventListener('click', process);
+})();
+</script>
+
+</body>
+</html>
